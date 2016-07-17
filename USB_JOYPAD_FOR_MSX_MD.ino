@@ -21,6 +21,7 @@
 //#define SUPPORT_PS3       // 31%
 //#define SUPPORT_XBOX      // 10%
 #define SUPPORT_PC        // 11%
+#define MEGA_2PLAYERS
 
 #define _DEBUG
 
@@ -61,8 +62,6 @@ XBOXRECV Xbox(&Usb);
 HIDUniversal Hid(&Usb);
 #endif
 
-const int PIN_DEVICE  = 7;    // Joytron Check = LOW, / Wireless = HIGH_PULL up (off)
-
 const int PIN_UP      = 2;    // MD up
 const int PIN_DOWN    = 3;    // MD down
 const int PIN_LEFT    = 4;    // MD left
@@ -95,7 +94,9 @@ class JoystickReportParser : public HIDReportParser {
     JoystickReportParser() { }
     virtual void Parse(HID *hid, bool is_rpt_id, uint8_t len, uint8_t *buf)
     {
-      if( digitalRead( PIN_DEVICE ) == HIGH ) {
+      int8_t deviceID = (int8_t)buf[1];
+      if( deviceID == 0x14 )
+      {
         // Standard Wireless
         isUp =    ( (int8_t)buf[9] > 0 ) || ( buf[2] & 0x01 );    if( isUp ) DBG("UP");
         isDown =  ( (int8_t)buf[9] < 0 ) || ( buf[2] & 0x02 );    if( isDown ) DBG("DN");
@@ -110,22 +111,23 @@ class JoystickReportParser : public HIDReportParser {
         isStart = ( buf[2] & 0x10 );    if( isStart ) DBG("Start");
         isSelect = ( buf[2] & 0x20 );   if( isSelect ) DBG("Select");
       }
-      else {
+      else
+      {
         // Joytron Pae-Wang
         isUp =    ( buf[2] == 0x07 || buf[2] == 0x00 || buf[2] == 0x01 );    if( isUp ) DBG("UP");
         isRight = ( buf[2] == 0x01 || buf[2] == 0x02 || buf[2] == 0x03 );    if( isRight ) DBG("RT");
         isDown =  ( buf[2] == 0x03 || buf[2] == 0x04 || buf[2] == 0x05 );    if( isDown ) DBG("DN");
         isLeft =  ( buf[2] == 0x05 || buf[2] == 0x06 || buf[2] == 0x07 );    if( isLeft ) DBG("LT");
         //  10 01 08 20
-        //  40 02 04 80        
-        isA = ( buf[0] & 0x40 );    if( isA ) DBG("A");
-        isB = ( buf[0] & 0x02 );    if( isB ) DBG("B");
-        isC = ( buf[0] & 0x04 );    if( isC ) DBG("C");
-        isD = ( buf[0] & 0x10 );    if( isD ) DBG("D");
-        isE = ( buf[0] & 0x01 );    if( isE ) DBG("E");
-        isF = ( buf[0] & 0x08 );    if( isF ) DBG("F");
-        //isG = ( buf[0] & 0x20 );    if( isG ) DBG("G");
-        //isH = ( buf[0] & 0x80 );    if( isH ) DBG("H");
+        //  40 02 04 80
+        isA = ( buf[0] & 0x02 );    if( isA ) DBG("A");
+        isB = ( buf[0] & 0x04 );    if( isB ) DBG("B");
+        isC = ( buf[0] & 0x80 );    if( isC ) DBG("C");
+                
+        isD = ( buf[0] & 0x01 );    if( isD ) DBG("D");
+        isE = ( buf[0] & 0x08 );    if( isE ) DBG("E");        
+        isF = ( buf[0] & 0x20 );    if( isF ) DBG("F");
+
         isStart = ( buf[1] & 0x02 );    if( isStart ) DBG("Start");
         isSelect = ( buf[1] & 0x01 );   if( isSelect ) DBG("Select");        
       }
@@ -148,9 +150,6 @@ void setup()
     while (1); //halt
   }
 #endif
-
-  // usage define
-  pinMode( PIN_DEVICE, INPUT_PULLUP);
 
   pinMode( PIN_UP,     INPUT);
   pinMode( PIN_DOWN,   INPUT);
