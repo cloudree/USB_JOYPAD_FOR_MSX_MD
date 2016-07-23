@@ -22,7 +22,6 @@
 //#define SUPPORT_XBOX      // 10%
 #define SUPPORT_PC        // 11%
 #define _DEBUG
-//#define DEBUG_LED
 
 #ifdef SUPPORT_PC
 # include <hid.h>
@@ -74,8 +73,6 @@ const int PIN_C       = A3;    // C
 const int PIN_X       = A2;    // X
 const int PIN_Y       = A1;    // Y
 const int PIN_Z       = A0;    // Z
-
-const int PIN_LED     = 13; 
 
 volatile bool isUp, isDown, isLeft, isRight; 
 volatile bool isA, isB, isC, isD, isE, isF, isG, isH;
@@ -194,11 +191,6 @@ void setup()
   if ( !Hid.SetReportParser(0, &Joy) )
     DBG( "SetReportParser Error" );
 #endif
-
-#ifdef DEBUG_LED  
-  pinMode( PIN_LED,    OUTPUT);
-  digitalWrite(PIN_LED,   LOW);
-#endif
 }
 
 void loop()
@@ -254,9 +246,5 @@ void loop()
   pinMode( PIN_X, isD ? OUTPUT : INPUT);
   pinMode( PIN_Y, isE ? OUTPUT : INPUT);
   pinMode( PIN_Z, isF ? OUTPUT : INPUT);
-
-#ifdef DEBUG_LED
-  digitalWrite( PIN_LED, isUp || isDown || isLeft || isRight || isStart || isSelect || isA || isB || isC || isD || isE || isF ? HIGH : LOW);
-#endif
 }
 
