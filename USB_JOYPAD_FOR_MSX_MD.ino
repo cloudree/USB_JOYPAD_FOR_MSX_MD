@@ -21,9 +21,8 @@
 //#define SUPPORT_PS3       // 31%
 //#define SUPPORT_XBOX      // 10%
 #define SUPPORT_PC        // 11%
-#define MEGA_2PLAYERS
-
 #define _DEBUG
+//#define DEBUG_LED
 
 #ifdef SUPPORT_PC
 # include <hid.h>
@@ -67,6 +66,7 @@ const int PIN_DOWN    = 3;    // MD down
 const int PIN_LEFT    = 4;    // MD left
 const int PIN_RIGHT   = 5;    // MD right
 const int PIN_START   = 6;    // MD Start
+const int PIN_SELECT  = 7;    // MD Select
 
 const int PIN_A       = A5;    // A
 const int PIN_B       = A4;    // B
@@ -74,6 +74,8 @@ const int PIN_C       = A3;    // C
 const int PIN_X       = A2;    // X
 const int PIN_Y       = A1;    // Y
 const int PIN_Z       = A0;    // Z
+
+const int PIN_LED     = 13; 
 
 volatile bool isUp, isDown, isLeft, isRight; 
 volatile bool isA, isB, isC, isD, isE, isF, isG, isH;
@@ -94,6 +96,13 @@ class JoystickReportParser : public HIDReportParser {
     JoystickReportParser() { }
     virtual void Parse(HID *hid, bool is_rpt_id, uint8_t len, uint8_t *buf)
     {
+
+      for (int i=0; i<len; i++ ) {
+        PrintHex<uint8_t > (buf[i], 0);
+        Serial.print(",");
+      }
+      Serial.println("\n");
+      
       int8_t deviceID = (int8_t)buf[1];
       if( deviceID == 0x14 )
       {
@@ -139,7 +148,7 @@ class JoystickReportParser : public HIDReportParser {
 void setup()
 {
 #ifdef _DEBUG
-  Serial.begin(115200);
+  Serial.begin(9600);
 #if !defined(__MIPSEL__)
   while (!Serial); // Wait for serial port to connect - used on Leonardo, Teensy and other boards with built-in USB CDC serial connection
 #endif
@@ -156,6 +165,7 @@ void setup()
   pinMode( PIN_LEFT,   INPUT);
   pinMode( PIN_RIGHT,  INPUT);
   pinMode( PIN_START,  INPUT);
+  pinMode( PIN_SELECT, INPUT);
   pinMode( PIN_A,      INPUT);
   pinMode( PIN_B,      INPUT);
   pinMode( PIN_C,      INPUT);
@@ -169,6 +179,7 @@ void setup()
   digitalWrite(PIN_LEFT,  LOW);
   digitalWrite(PIN_RIGHT, LOW);
   digitalWrite(PIN_START, LOW);
+  digitalWrite(PIN_SELECT,LOW);
   digitalWrite(PIN_A,     LOW);
   digitalWrite(PIN_B,     LOW);
   digitalWrite(PIN_C,     LOW);
@@ -176,12 +187,17 @@ void setup()
   digitalWrite(PIN_Y,     LOW);
   digitalWrite(PIN_Z,     LOW);
 
-  isUp = isDown = isLeft = isRight = isA = isB = isC = isD = isE = isF = false;
+  isUp = isDown = isLeft = isRight = isStart = isSelect = isA = isB = isC = isD = isE = isF = false;
 
 #ifdef SUPPORT_PC
   delay(200);
   if ( !Hid.SetReportParser(0, &Joy) )
     DBG( "SetReportParser Error" );
+#endif
+
+#ifdef DEBUG_LED  
+  pinMode( PIN_LED,    OUTPUT);
+  digitalWrite(PIN_LED,   LOW);
 #endif
 }
 
@@ -196,14 +212,14 @@ void loop()
     isDown = ( PS3.getAnalogHat(LeftHatY) > 137 || PS3.getButtonPress(DOWN) );
     isLeft = ( PS3.getAnalogHat(LeftHatX) < 117 || PS3.getButtonPress(LEFT) );
     isRight = ( PS3.getAnalogHat(LeftHatX) > 137 || PS3.getButtonPress(RIGHT) );
+    isStart = ( PS3.getButtonPress(START) );
+    isSelect = ( PS3.getButtonPress(SELECT) );
     isA = ( PS3.getButtonPress(CROSS) );
     isB = ( PS3.getButtonPress(CIRCLE) );
     isC = ( PS3.getButtonPress(SQUARE) );
     isD = ( PS3.getButtonPress(TRIANGLE) );
     isE = ( PS3.getButtonPress(L1) );
     isF = ( PS3.getButtonPress(R1) );
-    isStart = ( PS3.getButtonPress(START) );
-    isSelect = ( PS3.getButtonPress(SELECT) );
   }
 #endif
 
@@ -215,14 +231,14 @@ void loop()
     isDown = ( Xbox.getAnalogHat(LeftHatY, devID) < -7500 || Xbox.getButtonPress(DOWN, devID) );
     isLeft = ( Xbox.getAnalogHat(LeftHatX, devID) < -7500 || Xbox.getButtonPress(LEFT, devID) );
     isRight = ( Xbox.getAnalogHat(LeftHatX, devID) > 7500 || Xbox.getButtonPress(RIGHT, devID) );
+    isStart = ( Xbox.getButtonPress(START, devID) );
+    isSelect = ( Xbox.getButtonPress(SELECT, devID) );
     isA = ( Xbox.getButtonPress(A, devID) );
     isB = ( Xbox.getButtonPress(B, devID) );
     isC = ( Xbox.getButtonPress(X, devID) );
     isD = ( Xbox.getButtonPress(Y, devID) );
     isE = ( Xbox.getButtonPress(L1, devID) );
     isF = ( Xbox.getButtonPress(R1, devID) );
-    isStart = ( Xbox.getButtonPress(START, devID) );
-    isSelect = ( Xbox.getButtonPress(SELECT, devID) );
   }
 #endif
 
@@ -231,11 +247,16 @@ void loop()
   pinMode( PIN_LEFT, isLeft ? OUTPUT : INPUT);
   pinMode( PIN_RIGHT, isRight ? OUTPUT : INPUT);
   pinMode( PIN_START, isStart ? OUTPUT : INPUT);
+  pinMode( PIN_SELECT, isSelect ? OUTPUT : INPUT);
   pinMode( PIN_A, isA ? OUTPUT : INPUT);
   pinMode( PIN_B, isB ? OUTPUT : INPUT);
   pinMode( PIN_C, isC ? OUTPUT : INPUT);
   pinMode( PIN_X, isD ? OUTPUT : INPUT);
   pinMode( PIN_Y, isE ? OUTPUT : INPUT);
   pinMode( PIN_Z, isF ? OUTPUT : INPUT);
+
+#ifdef DEBUG_LED
+  digitalWrite( PIN_LED, isUp || isDown || isLeft || isRight || isStart || isSelect || isA || isB || isC || isD || isE || isF ? HIGH : LOW);
+#endif
 }
 
