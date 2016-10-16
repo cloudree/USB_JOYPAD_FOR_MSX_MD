@@ -1,6 +1,8 @@
 /*
   MSX Joystick from USBHIDJoystick (PC/PS3BT/XBOXRECV)
   modified by cloudree
+
+  2016.10.16 : arduino 1.6.10 + USB host shield library 2.0 : circuit@home.org
 */
 
 /*
@@ -22,10 +24,17 @@
 //#define SUPPORT_XBOX      // 10%
 #define SUPPORT_PC        // 11%
 #define _DEBUG
+#define USBHOSTLIB20      // arduino 1.6.10 + USB host shield library 2.0 : circuit@home.org
 
 #ifdef SUPPORT_PC
-# include <hid.h>
-# include <hiduniversal.h>
+#   ifdef USBHOSTLIB20
+#       include <usbhid.h>        // arduino 1.6.10
+#       define HID    USBHID
+#   else
+#       include <hid.h>         // arduino 1.6.x
+#   endif
+#   include <usbhub.h>
+#   include <hiduniversal.h>
 #endif
 
 #include <usbhub.h>
@@ -69,10 +78,10 @@ const int PIN_SELECT  = 7;    // MD Select
 
 const int PIN_A       = A5;    // A
 const int PIN_B       = A4;    // B
-const int PIN_C       = A3;    // C
+const int PIN_C       = A3;    // C / L
 const int PIN_X       = A2;    // X
 const int PIN_Y       = A1;    // Y
-const int PIN_Z       = A0;    // Z
+const int PIN_Z       = A0;    // Z / R
 
 volatile bool isUp, isDown, isLeft, isRight; 
 volatile bool isA, isB, isC, isD, isE, isF, isG, isH;
@@ -91,15 +100,14 @@ void DBG( String msg )
 class JoystickReportParser : public HIDReportParser {
   public:
     JoystickReportParser() { }
-    virtual void Parse(HID *hid, bool is_rpt_id, uint8_t len, uint8_t *buf)
+    virtual void Parse(USBHID *hid, bool is_rpt_id, uint8_t len, uint8_t *buf)
     {
-
       for (int i=0; i<len; i++ ) {
         PrintHex<uint8_t > (buf[i], 0);
         Serial.print(",");
       }
       Serial.println("\n");
-      
+
       int8_t deviceID = (int8_t)buf[1];
       if( deviceID == 0x14 )
       {
@@ -150,7 +158,7 @@ void setup()
   while (!Serial); // Wait for serial port to connect - used on Leonardo, Teensy and other boards with built-in USB CDC serial connection
 #endif
 
-  Serial.println( "PS3 Bluetooth / X-Box Wireless Receiver / PC USB Wireless controller for MSX by cloudree" );
+  Serial.println( "WiPad for MSX by cloudree" );
   if ( Usb.Init() == -1 ) {
     Serial.println( "No USB Host Shield Found" );
     while (1); //halt
